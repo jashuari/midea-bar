@@ -75,8 +75,12 @@ export interface DeviceRecord {
 export interface Electricity {
   /** KESCO household meter: one price all day, or cheaper at night. */
   meter: "single" | "dual";
-  /** 1: the household stays under 800 kWh a month. 2: it goes over, so the AC's use is billed at the higher rate. */
-  block: 1 | 2;
+  /**
+   * 1: the household stays under 800 kWh a month. 2: it goes over, so the AC's
+   * use is billed at the higher rate. "winter": it goes over from October to
+   * May and stays under from June to September, as a home heated by electricity does.
+   */
+  block: 1 | 2 | "winter";
   /** Add 8% VAT to the published prices. */
   vat: boolean;
   /** The unit's rated input power in watts, from its nameplate. Only needed when the unit does not meter itself. */

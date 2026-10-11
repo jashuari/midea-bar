@@ -3,7 +3,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { centsPerKwh, cost, isHighTariff } from "../src/core/tariff";
+import { blockOn, centsPerKwh, cost, isHighTariff } from "../src/core/tariff";
 import type { AcState, Electricity } from "../src/core/types";
 import { estimateLoad, UsageLog } from "../src/core/usage";
 
@@ -138,4 +138,38 @@ test("the log survives a restart", () => {
   for (let m = 0; m <= 30; m++) log.record(state(), t0 + m * 60_000);
   log.save(true);
   near(new UsageLog(log.path).summary(single, new Date(t0 + 3_600_000)).today.kwh, 0.5);
+});
+
+test("a winter-only household is priced at the high block from October to May", () => {
+  const winter: Electricity = { meter: "dual", block: "winter", vat: false, ratedWatts: 1000 };
+  assert.equal(blockOn(winter, new Date(2026, 9, 1)), 2, "1 October");
+  assert.equal(blockOn(winter, new Date(2027, 4, 31)), 2, "31 May");
+  assert.equal(blockOn(winter, new Date(2026, 5, 1)), 1, "1 June");
+  assert.equal(blockOn(winter, new Date(2026, 8, 30)), 1, "30 September");
+  assert.deepEqual(centsPerKwh(winter, new Date(2026, 0, 15)), { high: 15.43, low: 7.28 });
+  assert.deepEqual(centsPerKwh(winter, new Date(2026, 6, 15)), { high: 9.05, low: 3.88 });
+});
+
+test("each day is priced at its own season's rate, so the 14-day chart is right across 1 October", () => {
+  const log = fresh();
+  const winter: Electricity = { meter: "dual", block: "winter", vat: false, ratedWatts: 1000 };
+  // One hour flat out at midday on 30 September, and one on 1 October.
+  for (const day of [at(2026, 9, 30, 12, 0), at(2026, 10, 1, 12, 0)]) {
+    for (let m = 0; m < 60; m++) log.record(state(), day + m * 60_000);
+    log.record(state({ power: false }), day + 60 * 60_000);
+  }
+  const sum = log.summary(winter, new Date(at(2026, 10, 1, 18, 0)));
+  const byDate = Object.fromEntries(sum.days.map((d) => [d.date, d.cost]));
+  near(byDate["2026-09-30"]!, 0.0905);
+  near(byDate["2026-10-01"]!, 0.1543);
+  near(sum.month.cost, 0.1543);
+  assert.deepEqual(sum.cents, { high: 15.43, low: 7.28 });
+});
+
+test("the September 2026 bill adds up at the published rates plus VAT", () => {
+  // Read off the KESCO app: about 450 kWh by day and 145 at night, billed at a little over 50 euros.
+  const sept: Electricity = { meter: "dual", block: "winter", vat: true, ratedWatts: null };
+  const energy = cost(450, 145, sept, new Date(2026, 8, 15));
+  const withFixed = energy + 2.32 * 1.08;
+  assert.ok(withFixed > 50 && withFixed < 55, `September comes to ${withFixed.toFixed(2)}`);
 });

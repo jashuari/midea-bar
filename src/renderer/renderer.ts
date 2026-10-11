@@ -409,7 +409,18 @@ function renderBill(c: CostSummary): void {
   const s = c.settings;
   const save = (changes: Partial<Electricity>) => void ac.costSettings(changes).then(accept);
   segments($("set-meter"), ["single", "dual"], s.meter, (m) => [m === "single" ? "Single" : "Day / night"], (meter) => save({ meter }));
-  segments($("set-block"), ["1", "2"], String(s.block), (b) => [b === "1" ? "Under 800" : "Over 800", b === "1" ? "Under 800 kWh a month" : "Over 800 kWh a month"], (b) => save({ block: b === "2" ? 2 : 1 }));
+  const BLOCKS = {
+    "1": ["Under 800", "Under 800 kWh every month"],
+    "2": ["Over 800", "Over 800 kWh every month"],
+    winter: ["Over 800 in winter", "Over 800 kWh from October to May, under it from June to September"],
+  } as const;
+  segments(
+    $("set-block"),
+    ["1", "2", "winter"] as const,
+    String(s.block) as keyof typeof BLOCKS,
+    (b) => [BLOCKS[b][0], BLOCKS[b][1]],
+    (b) => save({ block: b === "winter" ? "winter" : b === "2" ? 2 : 1 }),
+  );
   segments($("set-vat"), ["on", "off"], s.vat ? "on" : "off", (v) => [v === "on" ? "Added" : "Left out"], (v) => save({ vat: v === "on" }));
 
   $("set-watts-row").hidden = c.metered;

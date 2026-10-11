@@ -4,10 +4,11 @@ import { dirname, join } from "node:path";
 import type { Config, DeviceRecord, Electricity } from "./types";
 
 /**
- * Defaults follow the owner's own KESCO contract: a single-tariff meter in a
- * household that usually passes 800 kWh a month. Both are settings in the app.
+ * Defaults follow the owner's own KESCO contract: a day/night meter in a home
+ * heated by electricity, which passes 800 kWh a month in the cold half of the
+ * year only. All of it can be changed in the app.
  */
-const ELECTRICITY: Electricity = { meter: "single", block: 2, vat: true, ratedWatts: null };
+const ELECTRICITY: Electricity = { meter: "dual", block: "winter", vat: true, ratedWatts: null };
 
 const EMPTY: Config = {
   devices: [],
@@ -26,7 +27,7 @@ function readElectricity(raw: unknown): Electricity {
   const watts = Number(r.ratedWatts);
   return {
     meter: r.meter === "dual" ? "dual" : r.meter === "single" ? "single" : ELECTRICITY.meter,
-    block: r.block === 1 ? 1 : r.block === 2 ? 2 : ELECTRICITY.block,
+    block: r.block === 1 || r.block === 2 || r.block === "winter" ? r.block : ELECTRICITY.block,
     vat: typeof r.vat === "boolean" ? r.vat : ELECTRICITY.vat,
     // Anything outside what a household unit can draw is a typo.
     ratedWatts: Number.isFinite(watts) && watts >= 100 && watts <= 10_000 ? Math.round(watts) : null,

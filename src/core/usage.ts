@@ -161,14 +161,17 @@ export class UsageLog {
   /** Today, this month and the last two weeks, priced with the given settings. */
   summary(e: Electricity, now = new Date()): CostSummary {
     const kw = (e.ratedWatts ?? 0) / 1000;
-    const price = (d: Day) => {
+    // Each day is priced at the rate in force on that day, which matters when the block changes with the season.
+    const price = (key: string, d: Day) => {
+      const [y, m, day] = key.split("-").map(Number);
       const high = d.high + d.loadHigh * kw;
       const low = d.low + d.loadLow * kw;
-      return { kwh: high + low, cost: cost(high, low, e), minutes: d.minutes };
+      return { kwh: high + low, cost: cost(high, low, e, new Date(y!, m! - 1, day!)), minutes: d.minutes };
     };
-    const add = (a: { kwh: number; cost: number; minutes: number }, d: Day | undefined) => {
+    const add = (a: { kwh: number; cost: number; minutes: number }, key: string) => {
+      const d = this.data.days[key];
       if (!d) return a;
-      const p = price(d);
+      const p = price(key, d);
       return { kwh: a.kwh + p.kwh, cost: a.cost + p.cost, minutes: a.minutes + p.minutes };
     };
     const zero = { kwh: 0, cost: 0, minutes: 0 };
@@ -179,14 +182,14 @@ export class UsageLog {
     let assumed = 0;
     for (const [key, d] of Object.entries(this.data.days)) {
       if (!key.startsWith(monthPrefix)) continue;
-      month = add(month, d);
+      month = add(month, key);
       assumed += d.assumed;
     }
 
     const days = [];
     for (let i = 13; i >= 0; i--) {
       const date = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i));
-      const p = add(zero, this.data.days[date]);
+      const p = add(zero, date);
       days.push({ date, kwh: p.kwh, cost: p.cost });
     }
 
@@ -194,11 +197,11 @@ export class UsageLog {
     return {
       metered,
       needsRating: !metered && !e.ratedWatts,
-      today: add(zero, this.data.days[today]),
+      today: add(zero, today),
       month,
       assumedMinutes: assumed,
       days,
-      cents: centsPerKwh(e),
+      cents: centsPerKwh(e, now),
       settings: e,
     };
   }

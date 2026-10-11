@@ -33,16 +33,28 @@ export function isHighTariff(at: Date): boolean {
   return winter ? hour >= 7 && hour < 22 : hour >= 8 && hour < 23;
 }
 
-/** Cents per kWh, VAT included if asked for, in the high and low periods. */
-export function centsPerKwh(e: Electricity): { high: number; low: number } {
+/** Months (1 to 12) in which a "winter" household passes 800 kWh: October to May. */
+export function isHeatingSeason(at: Date): boolean {
+  const month = at.getMonth() + 1;
+  return month >= 10 || month <= 5;
+}
+
+/** Which price block the unit's use falls in on a given day. */
+export function blockOn(e: Electricity, at: Date): 1 | 2 {
+  if (e.block === "winter") return isHeatingSeason(at) ? 2 : 1;
+  return e.block;
+}
+
+/** Cents per kWh on a given day, VAT included if asked for, in the high and low periods. */
+export function centsPerKwh(e: Electricity, at: Date = new Date()): { high: number; low: number } {
   const rates = RATES[e.meter];
-  const i = e.block === 2 ? 1 : 0;
+  const i = blockOn(e, at) === 2 ? 1 : 0;
   const vat = e.vat ? 1 + VAT : 1;
   return { high: rates.high[i]! * vat, low: rates.low[i]! * vat };
 }
 
-/** What an amount of energy costs, in euros. */
-export function cost(kwhHigh: number, kwhLow: number, e: Electricity): number {
-  const c = centsPerKwh(e);
+/** What an amount of energy used on a given day costs, in euros. */
+export function cost(kwhHigh: number, kwhLow: number, e: Electricity, at: Date = new Date()): number {
+  const c = centsPerKwh(e, at);
   return (kwhHigh * c.high + kwhLow * c.low) / 100;
 }

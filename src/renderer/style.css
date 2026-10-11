@@ -797,6 +797,22 @@ body[data-power="off"] .extras-tile {
   width: 178px;
 }
 
+/* A choice with three long labels gets a row of its own. */
+.set.stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+}
+
+.set.stacked .seg {
+  width: auto;
+}
+
+.set.stacked .seg button {
+  flex: 1 1 auto;
+  padding: 0 6px;
+}
+
 .watts {
   color: var(--text-2);
 }

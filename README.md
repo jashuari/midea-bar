@@ -90,7 +90,7 @@ test/            end-to-end tests against the pretend unit
 
 ```bash
 npm install
-npm test            # 47 tests against the pretend unit and a stubbed cloud
+npm test            # 50 tests against the pretend unit and a stubbed cloud
 npm start           # run the menu bar app from source
 npm run package     # build out/MideaBar-darwin-arm64/MideaBar.app
 ```
@@ -122,11 +122,14 @@ node dist/cli.cjs off
   October 2026: single-tariff meter 7.12 c/kWh (12.39 c above 800 kWh a month),
   day/night meter 9.05 / 3.88 c (15.43 / 7.28 c above 800). The regulator revises them
   about once a year; edit that file when it does.
-- The 800 kWh block is for the whole household, which the app cannot see. You tell it
-  whether you usually pass 800; if you do, the AC is priced at the higher rate, because
-  it is the use that pushes you over.
-- 8% VAT is added by default. KESCO's page does not say whether its prices include it;
-  compare with a bill and switch it off if the totals come out high.
+- The 800 kWh block is for the whole household, which the app cannot see, so you tell
+  it: under 800 every month, over 800 every month, or over 800 in winter only (October
+  to May), which fits a home heated by electricity. When the household is over, the AC is
+  priced at the higher rate, because it is the use that pushes you over. Each day is
+  priced at the rate for its own date.
+- 8% VAT is added by default. KESCO's page does not say whether its prices include it,
+  but a real bill does: about 450 kWh by day and 145 at night came to a little over 50
+  euros, which is the published rates plus the fixed charge plus 8%.
 - If the unit meters itself, energy comes from its own counter and is exact. The app
   asks every unit once, because some do not advertise it.
 - If it does not, energy is estimated: running time × rated power × a load factor
