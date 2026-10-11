@@ -1,0 +1,959 @@
+/* MideaBar popover.
+   Laid out like a Control Center panel: frosted tiles on the system popover
+   material, round toggles, and one wide slider for the temperature. The only
+   colour is the mode's, and it only appears while the unit is running. */
+
+:root {
+  color-scheme: light dark;
+  --text: rgba(0, 0, 0, 0.88);
+  --text-2: rgba(0, 0, 0, 0.55);
+  --tile: rgba(255, 255, 255, 0.5);
+  --tile-edge: rgba(0, 0, 0, 0.06);
+  --well: rgba(0, 0, 0, 0.07);
+  --well-hover: rgba(0, 0, 0, 0.11);
+  --picked: #ffffff;
+  --picked-shadow: 0 0.5px 1.5px rgba(0, 0, 0, 0.2);
+  --on: rgba(0, 0, 0, 0.84);
+  --on-text: #ffffff;
+  /* Ring around chart dots, close to the tile it sits on. */
+  --ring: #f4f4f5;
+  --focus: #1a73f0;
+  --danger: #d92c20;
+
+  /* What the air is doing. */
+  --cool: #2b7df2;
+  --heat: #ee6a2c;
+  --dry: #c2912a;
+  --fan: #2a9f86;
+  --auto: #7566ea;
+  --accent: var(--cool);
+
+  /* Chart series: validated as a pair for colour-blind separation on these surfaces. */
+  --series-room: #2a78d6;
+  --series-out: #eb6834;
+
+  --numerals: ui-rounded, "SF Pro Rounded", -apple-system, system-ui, sans-serif;
+  font: 13px/1.3 -apple-system, system-ui, "Helvetica Neue", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: rgba(255, 255, 255, 0.92);
+    --text-2: rgba(255, 255, 255, 0.58);
+    --tile: rgba(255, 255, 255, 0.075);
+    --tile-edge: rgba(255, 255, 255, 0.07);
+    --well: rgba(255, 255, 255, 0.1);
+    --well-hover: rgba(255, 255, 255, 0.16);
+    --picked: rgba(255, 255, 255, 0.26);
+    --picked-shadow: none;
+    --on: rgba(255, 255, 255, 0.94);
+    --on-text: #1c1c1e;
+    --ring: #303032;
+    --focus: #5aa2ff;
+    --danger: #ff7b6e;
+    --series-room: #3987e5;
+    --series-out: #d95926;
+  }
+}
+
+body[data-mode="heat"] { --accent: var(--heat); }
+body[data-mode="dry"] { --accent: var(--dry); }
+body[data-mode="fan"] { --accent: var(--fan); }
+body[data-mode="auto"] { --accent: var(--auto); }
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  color: var(--text);
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+  overflow: hidden;
+}
+
+/* The window is resized to fit the body, see fit() in renderer.ts. */
+body {
+  padding: 10px;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: default;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.dot {
+  fill: currentColor;
+  stroke: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.tile {
+  border-radius: 14px;
+  background: var(--tile);
+  box-shadow: inset 0 0 0 0.5px var(--tile-edge);
+  padding: 10px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
+  color: var(--text-2);
+  flex: none;
+}
+
+.icon:hover {
+  background: var(--well);
+}
+
+/* ── Who and what: power, name, what it is doing, the room ───────────────── */
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.power {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--well);
+  color: var(--text);
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.power svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+body[data-power="on"] .power {
+  background: var(--accent);
+  color: #fff;
+}
+
+.power:active,
+.step:active,
+.round:active .disc {
+  transform: scale(0.93);
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  display: block;
+  max-width: 100%;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 4px;
+}
+
+.rename {
+  width: 100%;
+  height: 20px;
+  padding: 0 4px;
+  margin: -2px 0 -2px -4px;
+  font-weight: 600;
+  border: 1px solid var(--tile-edge);
+  border-radius: 5px;
+  background: var(--well);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.doing {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.readings {
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.indoor {
+  font: 600 17px/1.1 var(--numerals);
+}
+
+.outdoor {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+/* ── Temperature ─────────────────────────────────────────────────────────── */
+
+.temp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--well);
+  transition: transform 0.1s;
+}
+
+.step:hover {
+  background: var(--well-hover);
+}
+
+.step:disabled {
+  opacity: 0.35;
+}
+
+.slider {
+  position: relative;
+  flex: 1;
+  height: 52px;
+  border-radius: 26px;
+  background: var(--well);
+  overflow: hidden;
+  touch-action: none;
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 50%;
+  border-radius: 26px;
+  background: var(--accent);
+  transition: width 0.14s ease-out, background-color 0.2s;
+}
+
+/* The grab handle: a short bar just inside the fill's leading edge. */
+.fill::after {
+  content: "";
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  width: 3px;
+  height: 20px;
+  margin-top: -10px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.slider.dragging .fill {
+  transition: none;
+}
+
+.target {
+  position: absolute;
+  left: 16px;
+  top: 0;
+  font: 600 30px/52px var(--numerals);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: #fff;
+  pointer-events: none;
+}
+
+body[data-power="off"] .fill {
+  background: var(--well-hover);
+}
+
+body[data-power="off"] .fill::after {
+  display: none;
+}
+
+body[data-power="off"] .target {
+  color: var(--text-2);
+}
+
+/* ── Round buttons: modes and extras ─────────────────────────────────────── */
+
+.round-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.round {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--text-2);
+  border-radius: 10px;
+}
+
+.disc {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--well);
+  color: var(--text);
+  transition: background-color 0.2s, color 0.2s, transform 0.1s;
+}
+
+.round:hover .disc {
+  background: var(--well-hover);
+}
+
+/* The chosen mode wears the mode's colour. */
+#mode .round[aria-checked="true"] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+#mode .round[aria-checked="true"] .disc {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Extras that are switched on go solid, like Control Center toggles. */
+#extras .round[aria-pressed="true"] {
+  color: var(--text);
+}
+
+#extras .round[aria-pressed="true"] .disc {
+  background: var(--on);
+  color: var(--on-text);
+}
+
+/* ── Fan and swing ───────────────────────────────────────────────────────── */
+
+.air {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  width: 36px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.seg {
+  flex: 1;
+  display: flex;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--well);
+}
+
+.seg button {
+  flex: 1;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.seg button[aria-checked="true"] {
+  background: var(--picked);
+  box-shadow: var(--picked-shadow);
+  font-weight: 600;
+}
+
+/* ── Timer choices ───────────────────────────────────────────────────────── */
+
+.chips {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.chips button {
+  flex: 1;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--well);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.chips button:hover {
+  background: var(--well-hover);
+}
+
+.chips button[aria-pressed="true"] {
+  background: var(--on);
+  color: var(--on-text);
+  font-weight: 600;
+}
+
+/* Everything below the power button is inert while the unit is off. */
+body[data-power="off"] .temp,
+body[data-power="off"] #mode,
+body[data-power="off"] .air,
+body[data-power="off"] .extras-tile {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ── What it costs ───────────────────────────────────────────────────────── */
+
+/* Two doors side by side: the room's last 24 hours, and what it has cost. */
+.insight {
+  display: flex;
+  gap: 8px;
+}
+
+.insight .tile {
+  flex: 1;
+  min-width: 0;
+  height: 58px;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.insight .tile:hover {
+  background: var(--well);
+}
+
+.insight .when {
+  font-size: 11px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.spark {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.spark .top {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.spark .span {
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.spark svg {
+  width: 100%;
+  height: 20px;
+  stroke: var(--text-2);
+  stroke-width: 1.5;
+  overflow: visible;
+}
+
+.cost {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cost .line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.cost .money {
+  font: 600 14px/1.1 var(--numerals);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.cost .ask {
+  font-size: 11.5px;
+  line-height: 1.25;
+  color: var(--text-2);
+}
+
+/* ── The last 24 hours ───────────────────────────────────────────────────── */
+
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  min-height: 34px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.readout .at {
+  flex-basis: 100%;
+  color: var(--text-2);
+}
+
+.readout .item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.readout b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Legend keys mirror the marks: a stroke for a line, dashes for the target, a bar for running time. */
+.key {
+  display: inline-block;
+  width: 12px;
+  height: 0;
+  border-top: 2px solid var(--text-2);
+}
+
+.key.room { border-color: var(--series-room); }
+.key.out { border-color: var(--series-out); }
+.key.goal { border-top: 2px dashed var(--text-2); }
+.key.ran { height: 4px; border: 0; border-radius: 1px; background: var(--text-2); }
+
+.plot {
+  display: block;
+  width: 100%;
+  height: 150px;
+  margin-top: 6px;
+  overflow: visible;
+  stroke: none;
+  border-radius: 6px;
+}
+
+.plot text {
+  fill: var(--text-2);
+  stroke: none;
+  font-size: 9.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.plot .grid { stroke: var(--well-hover); stroke-width: 1; }
+.plot .room { stroke: var(--series-room); stroke-width: 2; fill: none; }
+.plot .out { stroke: var(--series-out); stroke-width: 2; fill: none; }
+.plot .goal { stroke: var(--text-2); stroke-width: 1.5; stroke-dasharray: 3 3; fill: none; }
+.plot .ran { fill: var(--text-2); }
+.plot .cross { stroke: var(--text-2); stroke-width: 1; }
+.plot .dot { stroke: var(--ring); stroke-width: 2; }
+.plot .at-room { fill: var(--series-room); }
+.plot .at-out { fill: var(--series-out); }
+
+.plot-empty {
+  margin: 0;
+  padding: 26px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.facts {
+  display: flex;
+  gap: 10px;
+}
+
+.fact {
+  flex: 1;
+  min-width: 0;
+}
+
+.fact .when {
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.fact .value {
+  margin-top: 2px;
+  font: 600 15px/1.15 var(--numerals);
+  font-variant-numeric: tabular-nums;
+}
+
+.fact .more {
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+/* ── Things that need attention ──────────────────────────────────────────── */
+
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alerts:empty {
+  display: none;
+}
+
+.alert {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--tile);
+  box-shadow: inset 0 0 0 0.5px var(--tile-edge);
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.alert b {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.alert.is-problem b {
+  color: var(--danger);
+}
+
+.bill-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+.bill-hero {
+  padding: 12px 14px;
+}
+
+.bill-month {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.bill-figure {
+  margin-top: 2px;
+  font: 600 38px/1.05 var(--numerals);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.bill-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fourteen thin bars, one per day. A single series, so it wears ink rather than a hue. */
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 78px;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--well-hover);
+}
+
+.bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  /* The whole column is the hover target, not just the ink. */
+}
+
+.bar i {
+  display: block;
+  min-height: 0;
+  border-radius: 4px 4px 0 0;
+  background: var(--text-2);
+}
+
+.bar.today i {
+  background: var(--text);
+}
+
+.bar:hover i,
+.bar:focus-visible i {
+  background: var(--focus);
+}
+
+.days {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+}
+
+.days span {
+  flex: 1;
+  text-align: center;
+  font-size: 9.5px;
+  color: var(--text-2);
+}
+
+.tip {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  min-height: 15px;
+}
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.set {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.set > span:first-child {
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.set .seg {
+  flex: none;
+  width: 178px;
+}
+
+.watts {
+  color: var(--text-2);
+}
+
+.watts input {
+  width: 74px;
+  height: 26px;
+  padding: 0 8px;
+  text-align: right;
+  border: 1px solid var(--tile-edge);
+  border-radius: 7px;
+  background: var(--well);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.fine-print {
+  margin: 0;
+  padding: 0 6px 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 6px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.foot:empty,
+.foot.empty {
+  display: none;
+}
+
+/* ── Notices: searching, signing in, nothing found, unreachable ──────────── */
+
+.notice {
+  gap: 10px;
+  padding: 2px 8px 10px;
+}
+
+.notice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -4px 6px 0;
+}
+
+.notice h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.notice p {
+  margin: 0;
+  color: var(--text-2);
+}
+
+.notice .error {
+  color: var(--danger);
+}
+
+.notice .fine {
+  margin-top: 6px;
+  font-size: 11.5px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.button {
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 7px;
+  background: var(--well-hover);
+  font-weight: 500;
+}
+
+.button.primary {
+  background: var(--focus);
+  color: #fff;
+}
+
+#signin {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+#signin .button {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+#signin input,
+#ip {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--tile-edge);
+  border-radius: 7px;
+  background: var(--well);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#manual {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--well-hover);
+}
+
+#manual label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.manual-row {
+  display: flex;
+  gap: 8px;
+}
+
+#ip {
+  flex: 1;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.pulse {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  border: 3px solid var(--focus);
+  animation: pulse 1.6s ease-out infinite;
+}
+
+@keyframes pulse {
+  from { transform: scale(0.45); opacity: 1; }
+  to { transform: scale(1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; opacity: 0.6; }
+  .fill, .disc, .power, .step { transition: none; }
+}

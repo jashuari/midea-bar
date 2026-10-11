@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self'" />
+    <title>MideaBar</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-mode="cool" data-power="off">
+    <!-- Icons, referenced with <use>. 20-unit grid, drawn as strokes. -->
+    <svg class="sprite" aria-hidden="true">
+      <symbol id="i-power" viewBox="0 0 20 20"><path d="M10 2.8v6.6" /><path d="M5.5 5.4a6.4 6.4 0 1 0 9 0" /></symbol>
+      <symbol id="i-more" viewBox="0 0 20 20"><circle class="dot" cx="4.5" cy="10" r="1.5" /><circle class="dot" cx="10" cy="10" r="1.5" /><circle class="dot" cx="15.5" cy="10" r="1.5" /></symbol>
+      <symbol id="i-minus" viewBox="0 0 20 20"><path d="M5 10h10" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 20 20"><path d="M5 10h10M10 5v10" /></symbol>
+      <symbol id="i-auto" viewBox="0 0 20 20"><path d="M5.6 15.6 10 4.4l4.4 11.2" /><path d="M7.3 11.6h5.4" /></symbol>
+      <symbol id="i-cool" viewBox="0 0 20 20"><path d="M10 2.6v14.8M3.6 6.3l12.8 7.4M3.6 13.7l12.8-7.4" /><path d="M7.9 3.9 10 5.6l2.1-1.7M7.9 16.1 10 14.4l2.1 1.7" /></symbol>
+      <symbol id="i-dry" viewBox="0 0 20 20"><path d="M10 2.8c3.1 3.7 4.7 6.2 4.7 8.5a4.7 4.7 0 0 1-9.4 0c0-2.3 1.6-4.8 4.7-8.5z" /></symbol>
+      <symbol id="i-heat" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3.3" /><path d="M10 2.4v1.9M10 15.7v1.9M2.4 10h1.9M15.7 10h1.9M4.6 4.6 6 6M14 14l1.4 1.4M4.6 15.4 6 14M14 6l1.4-1.4" /></symbol>
+      <symbol id="i-fan" viewBox="0 0 20 20"><path d="M2.8 7.4h8.3a2.3 2.3 0 1 0-2.3-2.3" /><path d="M2.8 12.6h11.5a2.3 2.3 0 1 1-2.3 2.3" /><path d="M2.8 10h5.6" /></symbol>
+      <symbol id="i-eco" viewBox="0 0 20 20"><path d="M4.4 15.6c0-6.6 4-10.6 11.2-11.1.3 7.1-3.8 11.2-9.7 11.3" /><path d="M4.4 15.6c1.9-3.7 4.3-6.1 7.7-7.8" /></symbol>
+      <symbol id="i-turbo" viewBox="0 0 20 20"><path d="M11.2 2.6 4.6 11.3h4.6l-.7 6.1 6.9-8.8h-4.7z" /></symbol>
+      <symbol id="i-sleep" viewBox="0 0 20 20"><path d="M16 12.2A6.7 6.7 0 0 1 7.8 4a6.7 6.7 0 1 0 8.2 8.2z" /></symbol>
+      <symbol id="i-light" viewBox="0 0 20 20"><path d="M7.2 13.1a5 5 0 1 1 5.6 0c-.5.4-.8.9-.8 1.5v.4H8v-.4c0-.6-.3-1.1-.8-1.5z" /><path d="M8.4 17.4h3.2" /></symbol>
+      <symbol id="i-back" viewBox="0 0 20 20"><path d="M12.2 4.6 6.8 10l5.4 5.4" /></symbol>
+      <symbol id="i-next" viewBox="0 0 20 20"><path d="M7.8 4.6 13.2 10l-5.4 5.4" /></symbol>
+      <symbol id="i-timer" viewBox="0 0 20 20"><circle cx="10" cy="10.6" r="6.6" /><path d="M10 6.9v3.9l2.5 1.6M8 2.6h4" /></symbol>
+    </svg>
+
+    <main id="controls" hidden>
+      <header class="tile head">
+        <button id="power" class="power" role="switch" aria-checked="false" aria-label="Power">
+          <svg><use href="#i-power" /></svg>
+        </button>
+        <div class="who">
+          <button id="name" class="name" title="Double-click to rename"></button>
+          <input id="rename" class="rename" maxlength="40" hidden aria-label="Name for this air conditioner" />
+          <div id="doing" class="doing"></div>
+        </div>
+        <div class="readings">
+          <div id="indoor" class="indoor"></div>
+          <div id="outdoor" class="outdoor"></div>
+        </div>
+        <button class="icon more" data-menu aria-label="Settings" title="Settings">
+          <svg><use href="#i-more" /></svg>
+        </button>
+      </header>
+
+      <section class="tile temp">
+        <button id="down" class="step" aria-label="Lower temperature"><svg><use href="#i-minus" /></svg></button>
+        <div id="slider" class="slider" role="slider" tabindex="0" aria-label="Target temperature">
+          <div id="fill" class="fill"></div>
+          <span id="target" class="target"></span>
+        </div>
+        <button id="up" class="step" aria-label="Raise temperature"><svg><use href="#i-plus" /></svg></button>
+      </section>
+
+      <section id="mode" class="tile round-row" role="radiogroup" aria-label="Mode"></section>
+
+      <section class="tile air">
+        <div class="row"><span class="label" id="fan-label">Fan</span><div id="fan" class="seg" role="radiogroup" aria-labelledby="fan-label"></div></div>
+        <div class="row"><span class="label" id="swing-label">Swing</span><div id="swing" class="seg" role="radiogroup" aria-labelledby="swing-label"></div></div>
+      </section>
+
+      <section class="tile extras-tile">
+        <div id="extras" class="round-row"></div>
+        <div id="timer-choices" class="chips" hidden></div>
+      </section>
+
+      <div class="insight">
+        <button id="spark" class="tile spark" aria-label="Room temperature over the last 24 hours. Open chart"></button>
+        <button id="cost" class="tile cost" aria-label="Electricity cost. Open details"></button>
+      </div>
+
+      <footer id="foot" class="foot">
+        <span id="foot-left"></span>
+        <span id="foot-right"></span>
+      </footer>
+      <div id="alerts" class="alerts" role="status"></div>
+    </main>
+
+    <main id="trend" hidden>
+      <header class="bill-head">
+        <button id="trend-back" class="icon" aria-label="Back to controls"><svg><use href="#i-back" /></svg></button>
+        <span class="name">Last 24 hours</span>
+      </header>
+
+      <section class="tile">
+        <div id="readout" class="readout"></div>
+        <svg id="plot" class="plot" tabindex="0" role="img"></svg>
+        <p id="plot-empty" class="plot-empty" hidden>The chart fills in while MideaBar watches the room. Check back in a little while.</p>
+      </section>
+
+      <section class="tile facts" id="facts"></section>
+    </main>
+
+    <main id="bill" hidden>
+      <header class="bill-head">
+        <button id="bill-back" class="icon" aria-label="Back to controls"><svg><use href="#i-back" /></svg></button>
+        <span class="name">Electricity</span>
+      </header>
+
+      <section class="tile bill-hero">
+        <div class="bill-month" id="bill-month"></div>
+        <div class="bill-figure" id="bill-figure"></div>
+        <div class="bill-sub" id="bill-sub"></div>
+      </section>
+
+      <section class="tile">
+        <div class="chart-title" id="chart-title"></div>
+        <div class="chart" id="chart" role="list" aria-label="Cost per day, last 14 days"></div>
+        <div class="tip" id="tip" hidden></div>
+      </section>
+
+      <section class="tile settings">
+        <div class="set"><span id="set-meter-label">Meter</span><div id="set-meter" class="seg" role="radiogroup" aria-labelledby="set-meter-label"></div></div>
+        <div class="set"><span id="set-block-label">Household use</span><div id="set-block" class="seg" role="radiogroup" aria-labelledby="set-block-label"></div></div>
+        <div class="set"><span id="set-vat-label">8% VAT</span><div id="set-vat" class="seg" role="radiogroup" aria-labelledby="set-vat-label"></div></div>
+        <label class="set" id="set-watts-row"><span>Rated power</span>
+          <span class="watts"><input id="set-watts" inputmode="numeric" placeholder="e.g. 1050" maxlength="5" autocomplete="off" aria-describedby="bill-how" /> W</span>
+        </label>
+      </section>
+
+      <p class="fine-print" id="bill-how"></p>
+    </main>
+
+    <main id="notice" class="notice" hidden>
+      <div class="notice-head">
+        <span id="notice-name" class="name"></span>
+        <button class="icon more" data-menu aria-label="Settings" title="Settings">
+          <svg><use href="#i-more" /></svg>
+        </button>
+      </div>
+      <div id="pulse" class="pulse" hidden></div>
+      <h1 id="notice-title"></h1>
+      <p id="notice-text"></p>
+      <div class="actions">
+        <button id="primary" class="button primary"></button>
+        <button id="secondary" class="button" hidden></button>
+      </div>
+      <form id="signin" hidden>
+        <input id="account" type="email" placeholder="SmartHome email" autocomplete="off" spellcheck="false" aria-label="SmartHome email" required />
+        <input id="password" type="password" placeholder="Password" autocomplete="off" aria-label="SmartHome password" required />
+        <button class="button primary" type="submit">Sign in and pair</button>
+        <p class="fine">Your password goes to Midea's sign-in, the same one the phone app uses. It is used once and not saved. Only the unit's key is kept on this Mac.</p>
+      </form>
+      <form id="manual" hidden>
+        <label for="ip">Or connect by IP address</label>
+        <div class="manual-row">
+          <input id="ip" inputmode="decimal" placeholder="192.168.1.50" autocomplete="off" spellcheck="false" />
+          <button class="button" type="submit">Connect</button>
+        </div>
+      </form>
+    </main>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>
