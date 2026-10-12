@@ -29,6 +29,7 @@
 
     <main id="controls" hidden>
       <header class="tile head">
+        <div class="head-row">
         <button id="power" class="power" role="switch" aria-checked="false" aria-label="Power">
           <svg><use href="#i-power" /></svg>
         </button>
@@ -44,6 +45,66 @@
         <button class="icon more" data-menu aria-label="Settings" title="Settings">
           <svg><use href="#i-more" /></svg>
         </button>
+        </div>
+
+        <!-- The unit itself. Drawn, not 3D: shading does the depth, CSS does the motion,
+             and nothing animates while the popover is closed. State comes from data
+             attributes on <body>; the words above already say all of it for screen readers. -->
+        <svg class="unit" viewBox="0 0 260 104" aria-hidden="true">
+          <defs>
+            <linearGradient id="u-body" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="56">
+              <stop offset="0" class="u-body-top" />
+              <stop offset="1" class="u-body-bottom" />
+            </linearGradient>
+            <linearGradient id="u-lip" gradientUnits="userSpaceOnUse" x1="0" y1="40" x2="0" y2="58">
+              <stop offset="0" class="u-lip-top" />
+              <stop offset="1" class="u-lip-bottom" />
+            </linearGradient>
+            <linearGradient id="u-fade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff" stop-opacity="1" />
+              <stop offset="1" stop-color="#fff" stop-opacity="0" />
+            </linearGradient>
+            <mask id="u-air-mask"><rect x="0" y="56" width="260" height="48" fill="url(#u-fade)" /></mask>
+            <filter id="u-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.6" result="b" />
+              <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+            <filter id="u-shadow" x="-20%" y="-50%" width="140%" height="200%">
+              <feGaussianBlur stdDeviation="4" />
+            </filter>
+          </defs>
+
+          <!-- Soft shadow on the wall behind it. -->
+          <rect class="u-shadow" x="34" y="14" width="192" height="44" rx="16" filter="url(#u-shadow)" />
+
+          <!-- Body, with a highlight along the top edge and a darker band at the bottom for the curve. -->
+          <rect class="u-body" x="30" y="6" width="200" height="50" rx="16" fill="url(#u-body)" />
+          <path class="u-highlight" d="M46 8.5 H214" />
+          <rect class="u-lip" x="30" y="40" width="200" height="16" rx="8" fill="url(#u-lip)" />
+          <rect class="u-body" x="30" y="34" width="200" height="12" fill="url(#u-body)" />
+
+          <!-- Status dot and the display window. -->
+          <circle class="u-led" cx="52" cy="22" r="1.6" />
+          <rect class="u-window" x="174" y="15" width="38" height="18" rx="5" />
+          <text id="unit-digits" class="u-digits" x="193" y="28.5" text-anchor="middle" filter="url(#u-glow)"></text>
+
+          <!-- The vent, and the flap that closes over it when the unit is off. -->
+          <rect class="u-vent" x="48" y="48" width="164" height="7" rx="3.5" />
+          <rect class="u-flap" x="48" y="48" width="164" height="7" rx="3.5" />
+
+          <!-- Air. Seven streaks, each with its own path and delay (see style.css), so the flow never looks like one block moving. -->
+          <g class="u-air" mask="url(#u-air-mask)">
+            <g class="u-air-sway">
+              <path d="M68 57 C 63 70, 72 84, 64 102" />
+              <path d="M90 57 C 87 72, 94 86, 88 102" />
+              <path d="M112 57 C 110 70, 115 86, 111 102" />
+              <path d="M130 57 C 130 72, 132 86, 130 102" />
+              <path d="M148 57 C 150 70, 145 86, 149 102" />
+              <path d="M170 57 C 173 72, 166 86, 172 102" />
+              <path d="M192 57 C 197 70, 188 84, 196 102" />
+            </g>
+          </g>
+        </svg>
       </header>
 
       <section class="tile temp">

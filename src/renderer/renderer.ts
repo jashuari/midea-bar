@@ -479,6 +479,11 @@ function renderControls(s: AcState): void {
   const caps = snap!.caps!;
   document.body.dataset.mode = s.mode;
   document.body.dataset.power = s.power ? "on" : "off";
+  // The drawing of the unit reads these: air speed, swing and the display light.
+  document.body.dataset.fan = s.fan;
+  document.body.dataset.swing = s.swing;
+  document.body.dataset.display = s.display || !caps.display ? "on" : "off";
+  $("unit-digits").textContent = s.mode === "fan" ? "FA" : String(Math.round(s.target));
 
   $("power").setAttribute("aria-checked", String(s.power));
   $("doing").textContent = !s.power

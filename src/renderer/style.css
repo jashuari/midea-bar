@@ -159,8 +159,149 @@ svg {
 
 .head {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 4px;
+}
+
+.head-row {
+  display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ── The unit ────────────────────────────────────────────────────────────── */
+
+.unit {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 2px;
+  stroke: none;
+  overflow: visible;
+  /* The air takes the mode's colour, softened so it reads as air, not as a warning light. */
+  --air: #8ec5ff;
+  --flow: 1.4s;
+}
+
+body[data-mode="heat"] .unit { --air: #ffb27a; }
+body[data-mode="dry"] .unit { --air: #8fd6c6; }
+body[data-mode="fan"] .unit { --air: #cfd6df; }
+body[data-mode="auto"] .unit { --air: #b8afff; }
+
+/* Faster fan, faster air. */
+body[data-fan="silent"] .unit { --flow: 2.8s; }
+body[data-fan="low"] .unit { --flow: 2.1s; }
+body[data-fan="medium"] .unit { --flow: 1.5s; }
+body[data-fan="high"] .unit { --flow: 1.1s; }
+body[data-fan="max"] .unit { --flow: 0.8s; }
+
+/* A matte plastic body. In dark mode it is dimmed so it never glares from a dark menu bar. */
+.u-body-top { stop-color: #fdfdfd; }
+.u-body-bottom { stop-color: #e8eaee; }
+.u-lip-top { stop-color: #dde0e5; }
+.u-lip-bottom { stop-color: #c3c8cf; }
+.u-shadow { fill: rgba(0, 0, 0, 0.18); }
+.u-highlight { stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.2; stroke-linecap: round; fill: none; }
+.u-window { fill: rgba(30, 40, 55, 0.06); }
+.u-vent { fill: #2b3038; }
+.u-led { fill: #c7cbd2; transition: fill 0.4s; }
+
+@media (prefers-color-scheme: dark) {
+  .u-body-top { stop-color: #d2d5da; }
+  .u-body-bottom { stop-color: #b2b7be; }
+  .u-lip-top { stop-color: #aab0b8; }
+  .u-lip-bottom { stop-color: #8c929b; }
+  .u-shadow { fill: rgba(0, 0, 0, 0.45); }
+  .u-highlight { stroke: rgba(255, 255, 255, 0.55); }
+  .u-window { fill: rgba(20, 25, 35, 0.1); }
+}
+
+.u-digits {
+  font: 700 11.5px var(--numerals);
+  font-variant-numeric: tabular-nums;
+  fill: var(--accent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+/* The flap rests over the vent when off, and swings down and out when the unit runs. */
+.u-flap {
+  fill: url(#u-lip);
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+.u-air path {
+  fill: none;
+  stroke: var(--air);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-dasharray: 12 34;
+  opacity: 0;
+  transition: opacity 0.6s;
+  animation: air-flow var(--flow) linear infinite;
+  animation-play-state: paused;
+}
+
+/* Staggered as a share of the cycle, so the stagger holds at every fan speed. */
+.u-air path:nth-child(2) { animation-delay: calc(var(--flow) * -0.55); }
+.u-air path:nth-child(3) { animation-delay: calc(var(--flow) * -0.2); }
+.u-air path:nth-child(4) { animation-delay: calc(var(--flow) * -0.8); }
+.u-air path:nth-child(5) { animation-delay: calc(var(--flow) * -0.35); }
+.u-air path:nth-child(6) { animation-delay: calc(var(--flow) * -0.65); }
+.u-air path:nth-child(7) { animation-delay: calc(var(--flow) * -0.1); }
+
+.u-air-sway {
+  transform-box: view-box;
+  transform-origin: 130px 57px;
+}
+
+@keyframes air-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -46; }
+}
+
+/* Swing: side to side, up and down (the streaks reach further, then shorter), or both. */
+@keyframes sway-side {
+  0%, 100% { transform: skewX(-9deg); }
+  50% { transform: skewX(9deg); }
+}
+
+@keyframes sway-up {
+  0%, 100% { transform: scaleY(0.82); }
+  50% { transform: scaleY(1.06); }
+}
+
+@keyframes sway-both {
+  0%, 100% { transform: skewX(-9deg) scaleY(0.82); }
+  50% { transform: skewX(9deg) scaleY(1.06); }
+}
+
+/* Running. */
+body[data-power="on"] .u-led { fill: var(--accent); }
+body[data-power="on"][data-display="on"] .u-digits { opacity: 1; }
+body[data-power="on"] .u-flap { transform: translateY(6px) scaleY(0.55); }
+body[data-power="on"] .u-air path { opacity: 0.75; animation-play-state: running; }
+body[data-power="on"][data-swing="horizontal"] .u-air-sway { animation: sway-side 3.2s ease-in-out infinite; }
+body[data-power="on"][data-swing="vertical"] .u-air-sway { animation: sway-up 3.2s ease-in-out infinite; }
+body[data-power="on"][data-swing="both"] .u-air-sway { animation: sway-both 3.2s ease-in-out infinite; }
+
+/* Off: the body steps back a little, no light, no air. */
+body[data-power="off"] .unit .u-body,
+body[data-power="off"] .unit .u-lip {
+  opacity: 0.88;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u-air path,
+  .u-air-sway {
+    animation: none !important;
+  }
+  .u-flap {
+    transition: none;
+  }
 }
 
 .power {

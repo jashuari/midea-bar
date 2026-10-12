@@ -32,6 +32,12 @@ Move `MideaBar.app` to your Applications folder and open it. On first launch it 
 for the unit, asks macOS for Local Network access, and asks once for the SmartHome
 sign-in of the account that owns the unit (step 2 of "How it works" explains why).
 
+- **A drawing of the unit** at the top shows what it is doing: the display lights up with
+  the target, the flap opens and air streams out in the mode's colour, faster with fan
+  speed and swaying with swing. Off means closed, dark and still.
+
+  <img src="docs/unit.gif" width="320" alt="The drawn unit with air flowing out" />
+
 - Click the menu bar icon: power, a draggable temperature slider (half degrees where the
   unit takes them), mode, fan, swing, eco, turbo, sleep, the unit's display light, and an
   off timer. Room and outside temperature sit at the top, power draw at the bottom.
