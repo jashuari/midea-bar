@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type { Config, DeviceRecord, Electricity } from "./types";
+import type { Config, DeviceRecord, Electricity, Layout, Section } from "./types";
 
 /**
  * Defaults follow the owner's own KESCO contract: a day/night meter in a home
@@ -9,6 +9,19 @@ import type { Config, DeviceRecord, Electricity } from "./types";
  * year only. All of it can be changed in the app.
  */
 const ELECTRICITY: Electricity = { meter: "dual", block: "winter", vat: true, ratedWatts: null };
+
+export const SECTIONS: Section[] = ["unit", "modes", "air", "extras", "insight"];
+
+/** Everything on. */
+export const FULL_LAYOUT: Layout = { unit: true, modes: true, air: true, extras: true, insight: true };
+/** Just enough to switch it on, pick a mode and set the temperature. */
+export const MINIMAL_LAYOUT: Layout = { unit: false, modes: true, air: false, extras: false, insight: false };
+
+/** Read a layout, keeping `fallback`'s value for anything missing or malformed. */
+function readLayout(raw: unknown, fallback: Layout = FULL_LAYOUT): Layout {
+  const r = (raw ?? {}) as Partial<Layout>;
+  return Object.fromEntries(SECTIONS.map((k) => [k, typeof r[k] === "boolean" ? r[k] : fallback[k]])) as Layout;
+}
 
 const EMPTY: Config = {
   devices: [],
@@ -20,6 +33,7 @@ const EMPTY: Config = {
   electricity: ELECTRICITY,
   notify: true,
   alerted: {},
+  layout: FULL_LAYOUT,
 };
 
 function readElectricity(raw: unknown): Electricity {
@@ -68,6 +82,7 @@ export class Store {
         electricity: readElectricity(raw.electricity),
         notify: typeof raw.notify === "boolean" ? raw.notify : EMPTY.notify,
         alerted: raw.alerted && typeof raw.alerted === "object" ? { ...raw.alerted } : {},
+        layout: readLayout(raw.layout),
       };
     } catch {
       return structuredClone(EMPTY);
@@ -124,6 +139,15 @@ export class Store {
   }
 
   saveAlerted(): void {
+    this.write();
+  }
+
+  get layout(): Layout {
+    return this.config.layout;
+  }
+
+  setLayout(changes: Partial<Layout>): void {
+    this.config.layout = readLayout(changes, this.config.layout);
     this.write();
   }
 

@@ -273,3 +273,13 @@ test("remembers that a unit does not meter itself and never asks again", async (
     await unit.close();
   }
 });
+
+test("popover layout: everything by default, presets and single sections persist, junk is ignored", async () => {
+  const { FULL_LAYOUT, MINIMAL_LAYOUT } = await import("../src/core/store");
+  const fresh = new Store(join(mkdtempSync(join(tmpdir(), "mideabar-")), "config.json"));
+  assert.deepEqual(fresh.layout, FULL_LAYOUT);
+  fresh.setLayout(MINIMAL_LAYOUT);
+  assert.deepEqual(new Store(fresh.path).layout, MINIMAL_LAYOUT);
+  fresh.setLayout({ insight: true, unit: "yes" as unknown as boolean });
+  assert.deepEqual(new Store(fresh.path).layout, { ...MINIMAL_LAYOUT, insight: true });
+});

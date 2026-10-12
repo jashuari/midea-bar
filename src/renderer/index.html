@@ -50,7 +50,7 @@
         <!-- The unit itself. Drawn, not 3D: shading does the depth, CSS does the motion,
              and nothing animates while the popover is closed. State comes from data
              attributes on <body>; the words above already say all of it for screen readers. -->
-        <svg class="unit" viewBox="0 0 260 104" aria-hidden="true">
+        <svg id="sec-unit" class="unit" viewBox="0 0 260 104" aria-hidden="true">
           <defs>
             <linearGradient id="u-body" gradientUnits="userSpaceOnUse" x1="0" y1="6" x2="0" y2="56">
               <stop offset="0" class="u-body-top" />
@@ -118,17 +118,17 @@
 
       <section id="mode" class="tile round-row" role="radiogroup" aria-label="Mode"></section>
 
-      <section class="tile air">
+      <section id="sec-air" class="tile air">
         <div class="row"><span class="label" id="fan-label">Fan</span><div id="fan" class="seg" role="radiogroup" aria-labelledby="fan-label"></div></div>
         <div class="row"><span class="label" id="swing-label">Swing</span><div id="swing" class="seg" role="radiogroup" aria-labelledby="swing-label"></div></div>
       </section>
 
-      <section class="tile extras-tile">
+      <section id="sec-extras" class="tile extras-tile">
         <div id="extras" class="round-row"></div>
         <div id="timer-choices" class="chips" hidden></div>
       </section>
 
-      <div class="insight">
+      <div id="sec-insight" class="insight">
         <button id="spark" class="tile spark" aria-label="Room temperature over the last 24 hours. Open chart"></button>
         <button id="cost" class="tile cost" aria-label="Electricity cost. Open details"></button>
       </div>

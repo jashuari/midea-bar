@@ -54,7 +54,10 @@ sign-in of the account that owns the unit (step 2 of "How it works" explains why
 - The menu bar icon shows air coming out of the unit while it runs, next to the target
   temperature.
 - Right-click the icon (or the ⋯ button): switch unit, search again, start self-clean,
-  beep on/off, open at login, quit.
+  choose what the popover shows, beep on/off, open at login, quit.
+- **Show in the popover:** "Everything", "Minimal" (power, temperature and modes only),
+  or any mix of the drawing, modes, fan and swing, the extras, and the room chart and
+  cost. Alerts always show.
 - Double-click the name to rename the unit. Drag, scroll or use the arrow keys on the
   slider; Esc closes.
 
@@ -96,7 +99,7 @@ test/            end-to-end tests against the pretend unit
 
 ```bash
 npm install
-npm test            # 50 tests against the pretend unit and a stubbed cloud
+npm test            # 51 tests against the pretend unit and a stubbed cloud
 npm start           # run the menu bar app from source
 npm run package     # build out/MideaBar-darwin-arm64/MideaBar.app
 ```

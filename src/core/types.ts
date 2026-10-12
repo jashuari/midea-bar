@@ -143,6 +143,10 @@ export interface Alert {
   body: string;
 }
 
+/** Parts of the popover that can be hidden. The power button, name and temperature always stay. */
+export type Section = "unit" | "modes" | "air" | "extras" | "insight";
+export type Layout = Record<Section, boolean>;
+
 export interface Config {
   devices: DeviceRecord[];
   selectedId: number | null;
@@ -157,6 +161,8 @@ export interface Config {
   notify: boolean;
   /** What was last announced for each alert, so a restart does not repeat it. */
   alerted: Record<string, number>;
+  /** Which parts of the popover are shown. */
+  layout: Layout;
 }
 
 /**
@@ -181,6 +187,8 @@ export interface Snapshot {
   spark?: { values: number[]; min: number; max: number };
   /** What currently needs attention. */
   alerts?: Alert[];
+  /** Which parts of the popover to show. Added by the menu bar app. */
+  layout?: Layout;
 }
 
 export type Patch = Partial<

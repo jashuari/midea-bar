@@ -477,6 +477,14 @@ function nudge(steps: number): void {
 
 function renderControls(s: AcState): void {
   const caps = snap!.caps!;
+
+  // Sections the user chose to hide, from the right-click menu.
+  const layout = snap!.layout;
+  for (const [section, id] of [["unit", "sec-unit"], ["modes", "mode"], ["air", "sec-air"], ["extras", "sec-extras"], ["insight", "sec-insight"]] as const) {
+    $(id).toggleAttribute("hidden", layout ? !layout[section] : false);
+  }
+  if (layout && !layout.extras) choosingTimer = false;
+  document.body.classList.toggle("bare", layout ? !layout.unit : false);
   document.body.dataset.mode = s.mode;
   document.body.dataset.power = s.power ? "on" : "off";
   // The drawing of the unit reads these: air speed, swing and the display light.

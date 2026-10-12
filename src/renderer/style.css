@@ -164,6 +164,11 @@ svg {
   padding-bottom: 4px;
 }
 
+/* Without the drawing, the header shrinks back to a single row. */
+body.bare .head {
+  padding-bottom: 10px;
+}
+
 .head-row {
   display: flex;
   align-items: center;

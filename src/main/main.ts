@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { checkAlerts } from "../core/alerts";
 import { AcController } from "../core/controller";
 import { HistoryLog } from "../core/history";
-import { Store } from "../core/store";
+import { FULL_LAYOUT, MINIMAL_LAYOUT, SECTIONS, Store } from "../core/store";
 import type { Alert, Electricity, Patch, Snapshot } from "../core/types";
 import { UsageLog } from "../core/usage";
 
@@ -42,6 +42,7 @@ function decorate(bare: Snapshot): Snapshot {
     cost: usage.summary(controller.store.electricity),
     spark: spark(),
     alerts: bare.status === "ready" ? alerts : [],
+    layout: controller.store.layout,
   };
 }
 
@@ -241,6 +242,36 @@ function showMenu(): void {
           title: "MideaBar notifications work",
           body: "This is what a nudge about your air conditioner will look like.",
         }),
+    },
+    {
+      label: "Show in the popover",
+      submenu: (() => {
+        const layout = store.layout;
+        const isFull = SECTIONS.every((k) => layout[k] === FULL_LAYOUT[k]);
+        const isMinimal = SECTIONS.every((k) => layout[k] === MINIMAL_LAYOUT[k]);
+        const apply = (changes: Partial<typeof layout>) => {
+          store.setLayout(changes);
+          publish(controller.snapshot());
+        };
+        const names: Record<(typeof SECTIONS)[number], string> = {
+          unit: "Drawing of the unit",
+          modes: "Modes",
+          air: "Fan and swing",
+          extras: "Eco, turbo, sleep, light and timer",
+          insight: "Room chart and cost",
+        };
+        return [
+          { label: "Everything", type: "radio" as const, checked: isFull, click: () => apply(FULL_LAYOUT) },
+          { label: "Minimal", type: "radio" as const, checked: isMinimal, click: () => apply(MINIMAL_LAYOUT) },
+          { type: "separator" as const },
+          ...SECTIONS.map((k) => ({
+            label: names[k],
+            type: "checkbox" as const,
+            checked: layout[k],
+            click: (item: Electron.MenuItem) => apply({ [k]: item.checked }),
+          })),
+        ];
+      })(),
     },
     {
       label: "Beep when a setting changes",
